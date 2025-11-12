@@ -1,0 +1,244 @@
+// Prisma schema for ZimStudy.com
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum EducationLevel {
+  PRIMARY
+  ORDINARY_LEVEL
+  ADVANCED_LEVEL
+  TERTIARY
+}
+
+enum ContentType {
+  NOTE
+  VIDEO
+  QUIZ
+  PAST_PAPER
+  ASSIGNMENT
+}
+
+enum QuizDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  firstName     String
+  lastName      String
+  phoneNumber   String?        @unique
+  whatsappOptIn Boolean        @default(false)
+  role          UserRole       @default(STUDENT)
+  level         EducationLevel?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  profile       StudentProfile?
+  enrollments   Enrollment[]
+  quizAttempts  QuizAttempt[]
+  progress      Progress[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model StudentProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school          String?
+  grade           String?
+  bio             String?
+  avatar          String?
+  points          Int      @default(0)
+  streak          Int      @default(0)
+  lastActiveDate  DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("student_profiles")
+}
+
+model Subject {
+  id          String         @id @default(uuid())
+  name        String
+  code        String         @unique
+  description String?
+  level       EducationLevel
+  icon        String?
+  color       String?
+  order       Int            @default(0)
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  topics      Topic[]
+  enrollments Enrollment[]
+
+  @@map("subjects")
+}
+
+model Topic {
+  id          String      @id @default(uuid())
+  subjectId   String
+  subject     Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  order       Int         @default(0)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  contents    Content[]
+  progress    Progress[]
+
+  @@map("topics")
+}
+
+model Content {
+  id          String      @id @default(uuid())
+  topicId     String
+  topic       Topic       @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  type        ContentType
+  content     String      // For notes (markdown), video URL, or quiz ID
+  fileUrl     String?
+  thumbnail   String?
+  duration    Int?        // In minutes
+  order       Int         @default(0)
+  isActive    Boolean     @default(true)
+  views       Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  quiz        Quiz?
+
+  @@map("contents")
+}
+
+model Quiz {
+  id          String         @id @default(uuid())
+  contentId   String         @unique
+  content     Content        @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  difficulty  QuizDifficulty @default(MEDIUM)
+  timeLimit   Int?           // In minutes
+  passingScore Int           @default(70)
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  questions   Question[]
+  attempts    QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model Question {
+  id            String   @id @default(uuid())
+  quizId        String
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question      String
+  options       Json     // Array of options
+  correctAnswer Int      // Index of correct option
+  explanation   String?
+  points        Int      @default(1)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("questions")
+}
+
+model QuizAttempt {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score       Float
+  totalPoints Int
+  answers     Json     // Array of user answers
+  timeSpent   Int      // In seconds
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("quiz_attempts")
+}
+
+model Enrollment {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjectId  String
+  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime @default(now())
+
+  @@unique([userId, subjectId])
+  @@map("enrollments")
+}
+
+model Progress {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId     String
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  lastViewedAt DateTime @default(now())
+
+  @@unique([userId, topicId])
+  @@map("progress")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // 'info', 'success', 'warning', 'error'
+  isRead    Boolean  @default(false)
+  sentVia   String?  // 'web', 'whatsapp', 'both'
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model WhatsAppMessage {
+  id          String   @id @default(uuid())
+  phoneNumber String
+  message     String
+  status      String   // 'pending', 'sent', 'delivered', 'failed'
+  type        String   // 'notification', 'quiz', 'reminder'
+  metadata    Json?
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@map("whatsapp_messages")
+}
