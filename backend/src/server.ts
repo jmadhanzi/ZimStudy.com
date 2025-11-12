@@ -19,6 +19,9 @@ import notificationRoutes from './routes/notification.routes';
 // Import middleware
 import { errorHandler } from './middleware/error.middleware';
 
+// Import services
+import { initializeSchedulers } from './services/scheduler.service';
+
 dotenv.config();
 
 // Initialize Prisma Client
@@ -61,6 +64,12 @@ app.use(errorHandler);
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📚 ZimStudy API ready at http://localhost:${PORT}`);
+  
+  // Initialize WhatsApp schedulers
+  if (process.env.NODE_ENV !== 'test') {
+    initializeSchedulers();
+    console.log('📱 WhatsApp AI bot and schedulers initialized');
+  }
 });
 
 // Graceful shutdown
