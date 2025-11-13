@@ -6,10 +6,11 @@ import { AppError } from '../middleware/error.middleware';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 const generateToken = (userId: string, email: string, role: string): string => {
+  const secret = process.env.JWT_SECRET || 'default-secret-key';
   return jwt.sign(
     { id: userId, email, role },
-    process.env.JWT_SECRET!,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    secret,
+    { expiresIn: '7d' }
   );
 };
 

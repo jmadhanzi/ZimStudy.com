@@ -81,11 +81,13 @@ model Subject {
   name        String
   code        String         @unique
   description String?
-  level       EducationLevel
-  icon        String?
-  color       String?
-  order       Int            @default(0)
-  isActive    Boolean        @default(true)
+  level        EducationLevel
+  category     String?
+  isCompulsory Boolean        @default(false)
+  icon         String?
+  color        String?
+  order        Int            @default(0)
+  isActive     Boolean        @default(true)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 

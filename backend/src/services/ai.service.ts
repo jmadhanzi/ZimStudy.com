@@ -102,8 +102,8 @@ export const generateQuizExplanation = async (
   correctAnswer: number,
   userAnswer: number
 ): Promise<string> => {
+  const isCorrect = userAnswer === correctAnswer;
   try {
-    const isCorrect = userAnswer === correctAnswer;
     const prompt = `A student answered a quiz question ${isCorrect ? 'correctly' : 'incorrectly'}. 
     
 Question: ${question}

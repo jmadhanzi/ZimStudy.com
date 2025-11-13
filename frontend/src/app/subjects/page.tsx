@@ -36,7 +36,7 @@ export default function SubjectsPage() {
   const loadEnrolledSubjects = async () => {
     try {
       const response = await subjectsApi.getEnrolled()
-      const enrolled = new Set(response.data.data.enrollments.map((e: any) => e.subjectId))
+      const enrolled = new Set<string>(response.data.data.enrollments.map((e: any) => String(e.subjectId)))
       setEnrolledIds(enrolled)
     } catch (error) {
       console.error('Failed to load enrolled subjects:', error)
